@@ -21,6 +21,9 @@ export default function GamePage() {
   const [draggedCard, setDraggedCard] = useState<string | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [showPlayers, setShowPlayers] = useState(false);
+  const [touchStartY, setTouchStartY] = useState<number>(0);
+  const [touchStartX, setTouchStartX] = useState<number>(0);
+  const [isDraggingTouch, setIsDraggingTouch] = useState(false);
 
   // Load saved player name on mount (for convenience)
   useEffect(() => {
@@ -196,6 +199,62 @@ export default function GamePage() {
     newOrder.splice(dropIndex, 0, draggedItem);
     
     setReorderedCards(newOrder);
+    setDragOverIndex(null);
+  };
+
+  // Touch event handlers for mobile
+  const handleTouchStart = (e: React.TouchEvent, cardId: string, index: number) => {
+    const touch = e.touches[0];
+    setTouchStartX(touch.clientX);
+    setTouchStartY(touch.clientY);
+    setDraggedCard(cardId);
+    setIsDraggingTouch(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDraggingTouch || !draggedCard) return;
+    
+    e.preventDefault(); // Prevent scrolling while dragging
+    const touch = e.touches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    
+    // Find the card container that we're hovering over
+    const cardContainer = element?.closest('[data-drop-index]');
+    if (cardContainer) {
+      const dropIndex = parseInt(cardContainer.getAttribute('data-drop-index') || '-1');
+      if (dropIndex !== -1) {
+        setDragOverIndex(dropIndex);
+      }
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!isDraggingTouch || !draggedCard) {
+      setIsDraggingTouch(false);
+      setDraggedCard(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    const touch = e.changedTouches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    const cardContainer = element?.closest('[data-drop-index]');
+    
+    if (cardContainer) {
+      const dropIndex = parseInt(cardContainer.getAttribute('data-drop-index') || '-1');
+      if (dropIndex !== -1 && draggedCard) {
+        const dragIndex = reorderedCards.findIndex(c => c.id === draggedCard);
+        if (dragIndex !== dropIndex) {
+          const newOrder = [...reorderedCards];
+          const [draggedItem] = newOrder.splice(dragIndex, 1);
+          newOrder.splice(dropIndex, 0, draggedItem);
+          setReorderedCards(newOrder);
+        }
+      }
+    }
+    
+    setIsDraggingTouch(false);
+    setDraggedCard(null);
     setDragOverIndex(null);
   };
 
@@ -826,6 +885,7 @@ export default function GamePage() {
               {reorderedCards.map((card, index) => (
                 <div
                   key={card.id}
+                  data-drop-index={index}
                   className={`${dragOverIndex === index ? 'ring-4 ring-blue-400 ring-opacity-50 rounded-2xl' : ''}`}
                   draggable={gameState.canPass}
                   onDragStart={(e) => handleDragStart(e, card.id, index)}
@@ -833,6 +893,9 @@ export default function GamePage() {
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, index)}
+                  onTouchStart={(e) => handleTouchStart(e, card.id, index)}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
                 >
                   <motion.div
                     initial={{ scale: 0, rotate: -180 }}
@@ -859,6 +922,7 @@ export default function GamePage() {
               {reorderedCards.map((card, index) => (
                 <div
                   key={card.id}
+                  data-drop-index={index}
                   className={`${dragOverIndex === index ? 'ring-4 ring-blue-400 ring-opacity-50 rounded-2xl' : ''}`}
                   draggable={gameState.canPass}
                   onDragStart={(e) => handleDragStart(e, card.id, index)}
@@ -866,6 +930,9 @@ export default function GamePage() {
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, index)}
+                  onTouchStart={(e) => handleTouchStart(e, card.id, index)}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
                 >
                   <motion.div
                     initial={{ scale: 0, rotate: -180 }}
