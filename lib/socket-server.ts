@@ -265,6 +265,7 @@ function buildGameState(room: any, playerId: string): GameState {
   
   return {
     roomId: room.roomId,
+    yourPlayerId: playerId,
     phase: room.phase,
     players: Array.from(room.players.values()).map((p: any) => ({
       id: p.id,
