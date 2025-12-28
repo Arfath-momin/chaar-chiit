@@ -24,6 +24,9 @@ export default function GamePage() {
   const [touchStartY, setTouchStartY] = useState<number>(0);
   const [touchStartX, setTouchStartX] = useState<number>(0);
   const [isDraggingTouch, setIsDraggingTouch] = useState(false);
+  
+  // Drag threshold in pixels - movement must exceed this to start dragging
+  const DRAG_THRESHOLD = 10;
 
   // Load saved player name on mount (for convenience)
   useEffect(() => {
@@ -212,18 +215,29 @@ export default function GamePage() {
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDraggingTouch || !draggedCard) return;
+    if (!draggedCard) return;
     
-    e.preventDefault(); // Prevent scrolling while dragging
     const touch = e.touches[0];
-    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    const deltaX = Math.abs(touch.clientX - touchStartX);
+    const deltaY = Math.abs(touch.clientY - touchStartY);
+    const totalMovement = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
     
-    // Find the card container that we're hovering over
-    const cardContainer = element?.closest('[data-drop-index]');
-    if (cardContainer) {
-      const dropIndex = parseInt(cardContainer.getAttribute('data-drop-index') || '-1');
-      if (dropIndex !== -1) {
-        setDragOverIndex(dropIndex);
+    // Only activate dragging if movement exceeds threshold
+    if (!isDraggingTouch && totalMovement > DRAG_THRESHOLD) {
+      setIsDraggingTouch(true);
+    }
+    
+    if (isDraggingTouch) {
+      e.preventDefault(); // Prevent scrolling only when actively dragging
+      const element = document.elementFromPoint(touch.clientX, touch.clientY);
+      
+      // Find the card container that we're hovering over
+      const cardContainer = element?.closest('[data-drop-index]');
+      if (cardContainer) {
+        const dropIndex = parseInt(cardContainer.getAttribute('data-drop-index') || '-1');
+        if (dropIndex !== -1) {
+          setDragOverIndex(dropIndex);
+        }
       }
     }
   };
@@ -602,43 +616,43 @@ export default function GamePage() {
                         hover:scale-[1.02] transition-all duration-200
                       `}
                     >
-                      <div className="flex items-center justify-between p-5">
+                      <div className="flex items-center justify-between p-4 md:p-5 gap-3">
                         {/* Left: Position & Player Info */}
-                        <div className="flex items-center space-x-4 flex-1">
+                        <div className="flex items-center space-x-3 md:space-x-4 flex-1 min-w-0">
                           {/* Medal/Position Badge */}
-                          <div className={`${style.medalBg} rounded-xl p-3 shadow-lg`}>
+                          <div className={`${style.medalBg} rounded-xl p-2 md:p-3 shadow-lg flex-shrink-0`}>
                             {style.medal ? (
-                              <span className="text-3xl">{style.medal}</span>
+                              <span className="text-2xl md:text-3xl">{style.medal}</span>
                             ) : (
-                              <span className="text-white font-black text-2xl">#{index + 1}</span>
+                              <span className="text-white font-black text-xl md:text-2xl">#{index + 1}</span>
                             )}
                           </div>
                           
                           {/* Player Details */}
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-1">
-                              <span className="font-black text-white text-xl">{player.name}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-2 mb-1 flex-wrap">
+                              <span className="font-black text-white text-base md:text-xl truncate">{player.name}</span>
                               {isYou && (
-                                <span className="text-xs font-black text-blue-300 bg-blue-600/40 border border-blue-400/50 px-3 py-1 rounded-full">
+                                <span className="text-xs font-black text-blue-300 bg-blue-600/40 border border-blue-400/50 px-2 py-0.5 rounded-full flex-shrink-0">
                                   YOU
                                 </span>
                               )}
                             </div>
-                            <p className="text-sm text-slate-300 font-medium">
+                            <p className="text-xs md:text-sm text-slate-300 font-medium">
                               Position: <span className="text-white font-bold">#{position}</span>
                             </p>
                           </div>
                         </div>
                         
                         {/* Right: Points Display */}
-                        <div className="text-right">
-                          <p className="text-xs text-slate-400 font-bold uppercase mb-1">Round Points</p>
-                          <p className="text-3xl font-black text-emerald-400 mb-1">
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-xs text-slate-400 font-bold uppercase mb-1 hidden sm:block">Round</p>
+                          <p className="text-2xl md:text-3xl font-black text-emerald-400 mb-1">
                             +{points}
                           </p>
-                          <div className="bg-slate-900/50 px-3 py-1 rounded-lg border border-slate-600/50">
+                          <div className="bg-slate-900/50 px-2 md:px-3 py-1 rounded-lg border border-slate-600/50">
                             <p className="text-xs text-slate-400 font-semibold">Total</p>
-                            <p className="text-lg font-black text-white">{player.score}</p>
+                            <p className="text-base md:text-lg font-black text-white">{player.score}</p>
                           </div>
                         </div>
                       </div>
@@ -801,9 +815,14 @@ export default function GamePage() {
                     >
                       <div className="flex justify-between items-center">
                         <div className="flex-1 min-w-0">
-                          <p className="font-bold text-white text-sm truncate">
-                            {player.name} {isYou && '(You)'}
-                          </p>
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <p className="font-bold text-white text-sm truncate">
+                              {player.name}
+                            </p>
+                            {isYou && (
+                              <span className="text-xs text-blue-300 flex-shrink-0">(You)</span>
+                            )}
+                          </div>
                           <div className="flex items-center space-x-1.5 mt-0.5">
                             <p className="text-xs text-slate-400">{player.score} pts</p>
                             {player.hasPassed && (

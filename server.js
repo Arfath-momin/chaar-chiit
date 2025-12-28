@@ -165,9 +165,11 @@ class GameEngine {
     room.setWinner = undefined;
     room.currentPassingPlayerIndex = 0;
 
-    // Reset all players' hasPassed status
+    // Reset all players' hasPassed status and hand stack data
     room.players.forEach(player => {
       player.hasPassed = false;
+      player.handStackPosition = undefined;
+      player.handStackTimestamp = undefined;
     });
 
     this.startPlayerTurn(room);
