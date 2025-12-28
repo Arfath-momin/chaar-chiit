@@ -13,7 +13,7 @@ import type {
   GameConfig,
 } from '@/types/game';
 
-const CARD_CATEGORIES: CardCategory[] = ['Apple', 'Mango', 'Banana', 'Orange', 'Grape', 'Pineapple'];
+const CARD_CATEGORIES: CardCategory[] = ['Mango', 'Potato', 'Eggplant', 'Okra', 'Carrot', 'Banana', 'Lemon', 'Onion', 'Tomato', 'Watermelon'];
 
 const DEFAULT_CONFIG: GameConfig = {
   minPlayers: 3,
